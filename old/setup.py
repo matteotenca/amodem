@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
+from setuptools.command.test import test as testcommand
 
-class PyTest(TestCommand):
+
+class PyTest(testcommand):
 
     def finalize_options(self):
         self.test_args = []
@@ -13,6 +14,7 @@ class PyTest(TestCommand):
         import pytest
         sys.exit(pytest.main(['.']))
 
+
 setup(
     name='amodem',
     version='1.15.4',
@@ -20,11 +22,11 @@ setup(
     author='Roman Zeyde',
     author_email='dev@romanzey.de',
     license='MIT',
-    url='http://github.com/romanz/amodem',
+    url='https://github.com/romanz/amodem',
     packages=['amodem'],
     tests_require=['pytest'],
     cmdclass={'test': PyTest},
-    install_requires=['numpy','sounddevice'],
+    install_requires=['numpy', 'sounddevice'],
     platforms=['POSIX'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',

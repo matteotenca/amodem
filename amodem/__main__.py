@@ -1,12 +1,12 @@
-#!/usr/bin/env python
-# PYTHON_ARGCOMPLETE_OK
 import argparse
 import logging
 import os
+import signal
 import sys
 import zlib
 
-import pkg_resources
+# import pkg_resources
+from importlib.metadata import version
 
 from . import async_reader
 from . import audio
@@ -193,7 +193,8 @@ class _Dummy:
 
 
 def _version():
-    return pkg_resources.require('amodem')[0].version
+    return version('amodem')
+    # return pkg_resources.require('amodem')[0].version
 
 
 def _config_log(args):
@@ -210,7 +211,15 @@ def _config_log(args):
     logging.basicConfig(level=level, format=fmt)
 
 
+def handler(signum, frame):
+    # msg = "Ctrl-c was pressed."
+    # print(msg, flush=True)
+    raise SystemExit()
+    # exit(1)
+
+
 def _main():
+    signal.signal(signal.SIGINT, handler)
     fmt = ('Audio OFDM MODEM v{0:s}: '
            '{1:.1f} kb/s ({2:d}-QAM x {3:d} carriers) '
            'Fs={4:.1f} kHz')

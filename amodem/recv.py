@@ -5,6 +5,7 @@ import time
 
 import numpy as np
 
+from .error import PrefixError
 from . import dsp
 from . import common
 from . import framing
@@ -32,21 +33,21 @@ class Receiver:
         self.freq_err_gain = 0.01 * self.Tsym  # integration feedback gain
 
     def _prefix(self, symbols, gain=1.0):
-        S = common.take(symbols, len(equalizer.prefix))
-        S = S[:, self.carrier_index] * gain
-        sliced = np.round(np.abs(S))
+        s = common.take(symbols, len(equalizer.prefix))
+        s = s[:, self.carrier_index] * gain
+        sliced = np.round(np.abs(s))
         self.plt.figure()
         self.plt.subplot(1, 2, 1)
-        self._constellation(S, sliced, 'Prefix')
+        self._constellation(s, sliced, 'Prefix')
 
         bits = np.array(sliced, dtype=int)
         self.plt.subplot(1, 2, 2)
-        self.plt.plot(np.abs(S))
+        self.plt.plot(np.abs(s))
         self.plt.plot(equalizer.prefix)
         errors = bits != equalizer.prefix
         if any(errors):
             msg = f'Incorrect prefix: {sum(errors)} errors'
-            raise ValueError(msg)
+            raise PrefixError(msg)
         log.debug('Prefix OK')
 
     def _train(self, sampler, order, lookahead):
@@ -95,8 +96,11 @@ class Receiver:
             log.debug('%5.1f kHz: SNR = %5.2f dB', freq / 1e3, snr)
             self._constellation(symbols[:, i], train_symbols[:, i],
                                 f'$F_c = {freq} Hz$', index=i)
-        assert error_rate == 0, error_rate
-        log.debug('Training verified')
+        try:
+            assert error_rate == 0, error_rate
+            log.debug('Training verified')
+        except AssertionError as e:
+            return 1
 
     def _bitstream(self, symbols, error_handler):
         streams = []
@@ -150,7 +154,7 @@ class Receiver:
     def _report_progress(self, noise, sampler):
         e = np.array([e for v in noise.values() for e in v])
         noise.clear()
-        log.debug(
+        log.info(
             'Got  %10.3f kB, SNR: %5.2f dB, drift: %+5.2f ppm',
             self.stats['rx_bits'] / 8e3,
             -10 * np.log10(np.mean(np.abs(e) ** 2)),

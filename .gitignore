@@ -27,3 +27,6 @@ htmlcov
 /deb_dist
 *.html
 .pytest_cache/
+.idea/
+old/
+venv/

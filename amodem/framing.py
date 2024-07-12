@@ -5,6 +5,7 @@ import logging
 import struct
 
 from . import common
+from .error import *
 
 log = logging.getLogger(__name__)
 
@@ -26,8 +27,7 @@ class Checksum:
         payload = data[self.size:]
         expected = _checksum_func(payload)
         if received != expected:
-            log.warning('Invalid checksum: %08x != %08x', received, expected)
-            raise ValueError('Invalid checksum')
+            raise ChecksumError(f'Invalid checksum: {received:08x} != {expected:08x}')
         log.debug('Good checksum: %08x', received)
         return payload
 

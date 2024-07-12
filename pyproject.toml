@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "amodem"
+version = "1.15.4"
+authors = [{name = "Roman Zeyde", email = "dev@romanzey.de"}]
+license = {text = "MIT"}
+description = "Audio Modem Communication Library"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Networking",
+    "Topic :: Communications",
+]
+urls = {Homepage = "https://github.com/romanz/amodem"}
+dependencies = ["numpy", "sounddevice"]
+
+[project.scripts]
+amodem = "amodem.__main__:_main"
+
+[project.optional-dependencies]
+testing = ["pytest"]
+
+[tool.setuptools]
+packages = ["amodem"]
+platforms = ["POSIX"]
+include-package-data = false
