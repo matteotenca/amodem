@@ -1,11 +1,12 @@
 import itertools
 import logging
+import pprint
 
 import numpy as np
 
-from . import common
-from . import equalizer
-from . import dsp
+from amodem import common
+from amodem import equalizer
+from amodem import dsp
 
 log = logging.getLogger(__name__)
 
@@ -18,10 +19,12 @@ class Sender:
         self.modem = dsp.MODEM(config.symbols)
         self.carriers = config.carriers / config.Nfreq
         self.pilot = config.carriers[config.carrier_index]
+        self.pilot2 = config.carriers2[config.carrier_index]
         self.silence = np.zeros(equalizer.silence_length * config.Nsym)
         self.iters_per_report = config.baud  # report once per second
         self.padding = [0] * config.bits_per_baud
         self.equalizer = equalizer.Equalizer(config)
+        self.config = config
 
     def write(self, sym):
         sym = np.array(sym) * self.gain
@@ -30,6 +33,16 @@ class Sender:
         self.offset += len(sym)
 
     def start(self):
+        # log.info('config.carrier_index: %d', self.config.carrier_index)
+        # log.info('config.carriers: \n%s', pprint.pformat(
+        #     self.config.carriers[self.config.carrier_index]))
+        # log.info('config.carriers2: \n%s', pprint.pformat(
+        #     self.config.carriers2[self.config.carrier_index]))
+        # log.info('pilot: \n%s', pprint.pformat(self.pilot))
+        # log.info('pilot2: \n%s', pprint.pformat(self.pilot2))
+        for value in equalizer.prefix2:
+            self.write(self.pilot2 * value)
+
         for value in equalizer.prefix:
             self.write(self.pilot * value)
 

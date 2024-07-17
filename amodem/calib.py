@@ -28,7 +28,7 @@ def send(config, dst, volume_cmd=None, gain=1.0, limit=None):
     volume_ctl = volume_controller(volume_cmd)
     volume_ctl(1.0)  # full scale output volume
 
-    calibration_symbols = int(1.0 * config.Fs)
+    calibration_symbols = int(1.0 * config.sampling_frequency)
     t = np.arange(0, calibration_symbols) * config.Ts
     signals = [gain * np.sin(2 * np.pi * f * t) for f in config.frequencies]
     signals = [common.dumps(s) for s in signals]
@@ -39,7 +39,7 @@ def send(config, dst, volume_cmd=None, gain=1.0, limit=None):
 
 def frame_iter(config, src, frame_length):
     frame_size = frame_length * config.Nsym * config.sample_size
-    omegas = 2 * np.pi * np.array(config.frequencies) / config.Fs
+    omegas = 2 * np.pi * np.array(config.frequencies) / config.sampling_frequency
 
     while True:
         data = src.read(frame_size)

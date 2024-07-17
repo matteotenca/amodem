@@ -1,6 +1,8 @@
 import functools
 import itertools
 import logging
+import pprint
+import sys
 import time
 
 import numpy as np
@@ -21,9 +23,9 @@ class Receiver:
         self.plt = pylab
         self.modem = dsp.MODEM(config.symbols)
         self.frequencies = np.array(config.frequencies)
-        self.omegas = 2 * np.pi * self.frequencies / config.Fs
+        self.omegas = 2 * np.pi * self.frequencies / config.sampling_frequency
         self.Nsym = config.Nsym
-        self.Tsym = config.Tsym
+        self.Tsym = config.symbol_duration
         self.iters_per_update = 100  # [ms]
         self.iters_per_report = 1000  # [ms]
         self.modem_bitrate = config.modem_bps
@@ -93,14 +95,15 @@ class Receiver:
 
         self.plt.figure()
         for (i, freq), snr in zip(enumerate(self.frequencies), SNRs):
-            log.debug('%5.1f kHz: SNR = %5.2f dB', freq / 1e3, snr)
+            log.info('%5.1f kHz: SNR = %5.2f dB', freq / 1e3, snr)
             self._constellation(symbols[:, i], train_symbols[:, i],
                                 f'$F_c = {freq} Hz$', index=i)
         try:
             assert error_rate == 0, error_rate
             log.debug('Training verified')
         except AssertionError as e:
-            return 1
+            print("verify training - " + pprint.pformat(e.args[0]))
+            sys.exit(1)
 
     def _bitstream(self, symbols, error_handler):
         streams = []

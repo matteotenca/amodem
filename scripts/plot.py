@@ -30,7 +30,7 @@ def main():
         t = np.arange(len(x)) * config.Ts
         pylab.figure()
         pylab.title(fname)
-        spectrogram(t, x, config.Fs)
+        spectrogram(t, x, config.sampling_frequency)
 
     pylab.show()
 

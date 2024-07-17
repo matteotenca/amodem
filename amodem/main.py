@@ -1,6 +1,6 @@
 import itertools
 import logging
-from pprint import pprint
+import pprint
 
 import numpy as np
 
@@ -8,17 +8,17 @@ from . import send as _send
 from . import recv as _recv
 from . import framing, common, stream, detect, sampling
 from .error import ChecksumError, DecodingError, PrefixError
+from . import equalizer
 
 log = logging.getLogger(__name__)
 
 
 def send(config, src, dst, gain=1.0, extra_silence=0.0):
     sender = _send.Sender(dst, config=config, gain=gain)
-    Fs = config.Fs
+    Fs = config.sampling_frequency
 
     # pre-padding audio with silence (priming the audio sending queue)
     sender.write(np.zeros(int(Fs * (config.silence_start + extra_silence))))
-
     sender.start()
 
     training_duration = sender.offset
@@ -47,15 +47,17 @@ def recv(config, src, dst, dump_audio=None, pylab=None):
         src = stream.Dumper(src, dump_audio)
     reader = stream.Reader(src, data_type=common.loads)
     signal = itertools.chain.from_iterable(reader)
-
+    # log.info('config.carrier_index: %d', config.carrier_index)
+    # log.info('config.carriers: %s', pprint.pformat(config.carriers[config.carrier_index]))
     log.debug('Skipping %.3f seconds', config.skip_start)
-    common.take(signal, int(config.skip_start * config.Fs))
+    common.take(signal, int(config.skip_start * config.sampling_frequency))
 
     pylab = pylab or common.Dummy()
     detector = detect.Detector(config=config, pylab=pylab)
     receiver = _recv.Receiver(config=config, pylab=pylab)
     try:
         log.info('Waiting for carrier tone: %.1f kHz', config.Fc / 1e3)
+        log.info('Waiting for carrier tone: %.1f kHz', config.Fc)
         signal, amplitude, freq_error = detector.run(signal)
 
         freq = 1 / (1.0 + freq_error)  # receiver's compensated frequency
@@ -71,7 +73,8 @@ def recv(config, src, dst, dump_audio=None, pylab=None):
         return True
     except ChecksumError as e:
         print(e.msg)
-        return False
+        recv(config, src, dst)
+        # return False
     except DecodingError as e:
         print(e.msg)
         return False
@@ -81,7 +84,7 @@ def recv(config, src, dst, dump_audio=None, pylab=None):
     except SystemExit:
         return False
     except Exception as e:  # pylint: disable=broad-except
-        pprint(e)
+        pprint.pprint(e)
         log.info('Decoding failed')
         return False
     finally:

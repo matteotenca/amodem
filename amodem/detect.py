@@ -24,11 +24,11 @@ class Detector:
 
     def __init__(self, config, pylab):
         self.freq = config.Fc
-        self.omega = 2 * np.pi * self.freq / config.Fs
+        self.omega = 2 * np.pi * self.freq / config.sampling_frequency
         self.Nsym = config.Nsym
-        self.Tsym = config.Tsym
+        self.Tsym = config.symbol_duration
         self.maxlen = config.baud  # 1 second of symbols
-        self.max_offset = config.timeout * config.Fs
+        self.max_offset = config.timeout * config.sampling_frequency
         self.plt = pylab
 
     def _wait(self, samples):

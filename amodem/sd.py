@@ -33,7 +33,7 @@ class Recorder:
         self.bufsize = 4096
 
         self.audio_stream = sd.RawInputStream(
-            samplerate=lib.config.Fs,
+            samplerate=lib.config.sampling_frequency,
             blocksize=self.bufsize,
             channels=1, dtype='int16')
         self.audio_stream.start()
@@ -52,10 +52,10 @@ class Recorder:
 class Player:
     def __init__(self, lib):
         self.buffer_length_ms = 10
-        self.buffer_size = int(lib.config.Fs * (self.buffer_length_ms / 1000))
+        self.buffer_size = int(lib.config.sampling_frequency * (self.buffer_length_ms / 1000))
 
         self.audio_stream = sd.RawOutputStream(
-            samplerate=lib.config.Fs,
+            samplerate=lib.config.sampling_frequency,
             blocksize=self.buffer_size,
             channels=1, dtype='int16')
 

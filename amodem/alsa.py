@@ -16,7 +16,7 @@ class Interface:
 
     def __init__(self, config):
         self.config = config
-        rate = int(config.Fs)
+        rate = int(config.sampling_frequency)
         bits_per_sample = config.bits_per_sample
         assert bits_per_sample == 16
 

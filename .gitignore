@@ -30,3 +30,5 @@ htmlcov
 .idea/
 old/
 venv/
+/old/
+/.dmypy.json

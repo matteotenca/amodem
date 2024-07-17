@@ -13,7 +13,7 @@ class Equalizer:
 
     def __init__(self, config):
         self.carriers = config.carriers
-        self.omegas = 2 * np.pi * np.array(config.frequencies) / config.Fs
+        self.omegas = 2 * np.pi * np.array(config.frequencies) / config.sampling_frequency
         self.Nfreq = config.Nfreq
         self.Nsym = config.Nsym
 
@@ -48,7 +48,8 @@ class Equalizer:
 
 equalizer_length = 200
 silence_length = 50
-prefix = [1]*equalizer_length + [0]*silence_length
+prefix = [1]*(equalizer_length*1) + [0]*silence_length
+prefix2 = [1]*(equalizer_length*3) + [0]*silence_length
 
 
 def train(signal, expected, order, lookahead=0):

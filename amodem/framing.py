@@ -5,7 +5,7 @@ import logging
 import struct
 
 from . import common
-from .error import *
+from .error import ChecksumError
 
 log = logging.getLogger(__name__)
 

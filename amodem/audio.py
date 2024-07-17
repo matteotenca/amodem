@@ -77,7 +77,7 @@ class Stream:
         self.stream_callback = ctypes.c_void_p(None)
         self.bytes_per_sample = config.sample_size
         self.latency = float(config.latency)  # in seconds
-        self.bufsize = int(self.latency * config.Fs * self.bytes_per_sample)
+        self.bufsize = int(self.latency * config.sampling_frequency * self.bytes_per_sample)
         assert config.bits_per_sample == 16  # just to make sure :)
 
         read = bool(read)
@@ -99,7 +99,7 @@ class Stream:
             ctypes.byref(self.stream),
             ctypes.byref(self.params) if read else None,
             ctypes.byref(self.params) if write else None,
-            ctypes.c_double(config.Fs),
+            ctypes.c_double(config.sampling_frequency),
             ctypes.c_ulong(0),  # (paFramesPerBufferUnspecified)
             ctypes.c_ulong(0),  # no flags (paNoFlag)
             self.stream_callback,

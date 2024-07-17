@@ -7,13 +7,15 @@ import zlib
 
 # import pkg_resources
 from importlib.metadata import version
+from typing_extensions import BinaryIO, Any, TextIO, Optional
 
 from . import async_reader
 from . import audio
 from . import calib
 from . import main
-from .config import bitrates
-
+# from .config import bitrates
+from .config import Configuration
+from .config import mbitrates
 
 try:
     import argcomplete
@@ -22,21 +24,24 @@ except ImportError:
 
 log = logging.getLogger('__name__')
 
-bitrate = os.environ.get('BITRATE', 1)
-config = bitrates.get(int(bitrate))
+# bitrate = os.environ.get('BITRATE', 1)
+# bitrate = "1"
+# config = bitrates.get(int(bitrate))
 
 
 class Compressor:
-    def __init__(self, stream):
-        self.obj = zlib.compressobj()
+
+    def __init__(self, stream: BinaryIO):
+        self.obj: Optional[Any] = zlib.compressobj()
         log.info('Using zlib compressor')
         self.stream = stream
 
-    def read(self, size):
+    def read(self, size: int) -> bytes | str:
         while True:
             data = self.stream.read(size)
             if data:
-                result = self.obj.compress(data)
+                assert self.obj is not None
+                result: bytes | str  = self.obj.compress(data)
                 if not result:  # compression is too good :)
                     continue  # try again (since falsy data = EOF)
             elif self.obj:
@@ -48,20 +53,20 @@ class Compressor:
 
 
 class Decompressor:
-    def __init__(self, stream):
+    def __init__(self, stream: BinaryIO):
         self.obj = zlib.decompressobj()
         log.info('Using zlib decompressor')
         self.stream = stream
 
-    def write(self, data):
+    def write(self, data: bytes) -> None:
         self.stream.write(self.obj.decompress(bytes(data)))
 
-    def flush(self):
+    def flush(self) -> None:
         self.stream.write(self.obj.flush())
 
 
-def FileType(mode, interface_factory=None):
-    def opener(fname):
+def file_type(mode: str, interface_factory: Any = None) -> async_reader.AsyncReader | BinaryIO | TextIO | Any:
+    def opener(fname: str) -> async_reader.AsyncReader | BinaryIO | TextIO | Any:
         audio_interface = interface_factory() if interface_factory else None
 
         assert 'r' in mode or 'w' in mode
@@ -104,8 +109,8 @@ def wrap(cls, stream, enable):
     return cls(stream) if enable else stream
 
 
-def create_parser(description, interface_factory):
-    p = argparse.ArgumentParser(description=description)
+def create_parser(interface_factory):
+    p = argparse.ArgumentParser()
     subparsers = p.add_subparsers(required=True)
 
     # Modulator
@@ -120,6 +125,9 @@ def create_parser(description, interface_factory):
         '-g', '--gain', type=float, default=1.0,
         help='Modulator gain (defaults to 1)')
     sender.add_argument(
+        '-b', '--bitrate', type=int, default=1,
+        help='Birate config (defaults to 1)')
+    sender.add_argument(
         '--silence', type=float, default=0.0,
         help='Extra silence before sending the data (in seconds)')
     sender.set_defaults(
@@ -131,8 +139,8 @@ def create_parser(description, interface_factory):
             config=config, dst=args.dst,
             volume_cmd=get_volume_cmd(args)
         ),
-        input_type=FileType('rb'),
-        output_type=FileType('wb', interface_factory),
+        input_type=file_type('rb'),
+        output_type=file_type('wb', interface_factory),
         command='send'
     )
 
@@ -144,7 +152,10 @@ def create_parser(description, interface_factory):
     receiver.add_argument(
         '-o', '--output', help='output file (use "-" for stdout).')
     receiver.add_argument(
-        '-d', '--dump', type=FileType('wb'),
+        '-b', '--bitrate', type=int, default=1,
+        help='Birate config (defaults to 1)')
+    receiver.add_argument(
+        '-d', '--dump', type=file_type('wb'),
         help='Filename to save recorded audio')
     receiver.add_argument(
         '--plot', action='store_true', default=False,
@@ -158,8 +169,8 @@ def create_parser(description, interface_factory):
             config=config, src=args.src, verbose=args.verbose,
             volume_cmd=get_volume_cmd(args)
         ),
-        input_type=FileType('rb', interface_factory),
-        output_type=FileType('wb'),
+        input_type=file_type('rb', interface_factory),
+        output_type=file_type('wb'),
         command='recv'
     )
 
@@ -198,9 +209,11 @@ def _version():
 
 
 def _config_log(args):
-    if args.verbose == 0:
-        level, fmt = 'INFO', '%(message)s'
-    elif args.verbose == 1:
+
+    level, fmt = 'INFO', '%(message)s'
+    # if args.verbose == 0 or args.verbose :
+    #     level, fmt = 'INFO', '%(message)s'
+    if args.verbose == 1:
         level, fmt = 'DEBUG', '%(message)s'
     elif args.verbose >= 2:
         level, fmt = ('DEBUG', '%(asctime)s %(levelname)-10s '
@@ -220,21 +233,25 @@ def handler(signum, frame):
 
 def _main():
     signal.signal(signal.SIGINT, handler)
-    fmt = ('Audio OFDM MODEM v{0:s}: '
-           '{1:.1f} kb/s ({2:d}-QAM x {3:d} carriers) '
-           'Fs={4:.1f} kHz')
-    description = fmt.format(_version(),
-                             config.modem_bps / 1e3, len(config.symbols),
-                             config.Nfreq, config.Fs / 1e3)
+
     interface = None
 
     def interface_factory():
         return interface
 
-    p = create_parser(description, interface_factory)
+    p = create_parser(interface_factory)
 
     args = p.parse_args()
     _config_log(args)
+
+    # config = bitrates.get(int(args.bitrate))
+    config = Configuration(**mbitrates.get(int(args.bitrate)))
+    fmt = ('Audio OFDM MODEM v{0:s}: '
+           '{1:.1f} kb/s ({2:d}-QAM x {3:d} carriers) '
+           'sampling_frequency={4:.1f} kHz')
+    description = fmt.format(_version(),
+                             config.modem_bps / 1e3, len(config.symbols),
+                             config.Nfreq, config.sampling_frequency / 1e3)
 
     # Parsing and execution
     log.info(description)
